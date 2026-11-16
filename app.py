@@ -301,7 +301,7 @@ if jc is not None:
         f"(y = {de(jc['y_sat'], 4)} beim Sprung; Näherung für konstanten Fehler in der Sättigung). Faktor der Rekursion in der Sättigung |1 − kaw| = {de(jc['faktor'], 2)}"
         + (" – **nicht kleiner als 1: die Rekursion divergiert**." if jc["faktor"] >= 1 else ".")
     )
-    st.caption("Liegt v nach dem Sprung weit unter −1 (bei kaw > ki/kp), ist das die Ursache des Unterschwingens; bei kaw = ki/kp fällt der Term mit dem Fehler weg. Die Formel gilt nur, solange v in der Sättigung bleibt.")
+    st.caption("Liegt v nach dem Sprung weit unter −1 (bei kaw > ki/kp), passt das zum Unterschwingen in diesem Fall (nur Formel und Beobachtung, kein Gegenversuch); bei kaw = ki/kp fällt der Term mit dem Fehler weg. Die Formel gilt nur, solange v in der Sättigung bleibt.")
 kind_, text = ev.verdict_kaw(rows4, float(kaw4), ratio)
 getattr(st, kind_)(text)
 
@@ -438,7 +438,7 @@ $$N_{\text{Ausstieg}} \approx \frac{S}{\Delta} - \frac{1 + k_p \Delta}{k_i \Delt
 
 **Rückrechnung in der Sättigung** (solange $v$ gesättigt bleibt, also $u = 1$):
 $$I_{k+1} = (1 - k_{aw})\, I_k + (k_i - k_{aw} k_p)\, e_k + k_{aw}, \qquad I^\ast = 1 + \left(\frac{k_i}{k_{aw}} - k_p\right) e$$
-Die Rekursion ist für $0 < k_{aw} < 2$ stabil (Faktor $|1 - k_{aw}|$). Bei $k_{aw} > k_i/k_p$ liegt $v$ nach dem Sprung weit unter $-1$; bei $k_{aw} = k_i/k_p$ fällt der Term mit $e$ weg.
+Die Rekursion ist für $0 < k_{aw} < 2$ stabil (Faktor $|1 - k_{aw}|$). Bei $k_{aw} > k_i/k_p$ liegt $v$ nach dem Sprung tiefer als bei $k_{aw} = k_i/k_p$, in Fall a1 ab $k_{aw} = 0{,}2$ weit unter $-1$; bei $k_{aw} = k_i/k_p$ fällt der Term mit $e$ weg.
 
 **Messrauschen.** Die Summe der Updates ergibt die exakte Identität
 $$\sum_k e_k = \frac{k_{aw}}{k_i} \sum_k (v_k - u_k) + \frac{I_{\text{Ende}} - I_{\text{Start}}}{k_i}$$

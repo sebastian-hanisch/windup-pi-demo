@@ -162,7 +162,9 @@ def test_b3_prediction_on_the_random_cases_is_in_the_frozen_data():
     v = FROZEN["zufall"]["vorhersage"]
     assert v["annahme_erfuellt"] == 2727 and v["gleich"] == 2727 and FROZEN["zufall"]["n"] - v["annahme_erfuellt"] == 273
     assert v["kleinster_abstand"] == pytest.approx(1.2e-5, abs=2e-7)
-    _readme_has("in 2 727 von 2 727 Zufallsfällen", "(273 Fälle erfüllten sie nicht; kleinster Abstand 1,2·10⁻⁵)")
+    # 273 = 272 (Sättigung schon vor dem Sprung beendet) + 1 (kein Ausstieg im Horizont): derselbe Fall fehlt bei „mit“ + „ohne“ Windup (2 973 + 26 = 2 999)
+    assert FROZEN["zufall"]["windup"]["mit"] + FROZEN["zufall"]["windup"]["ohne"] == FROZEN["zufall"]["n"] - 1
+    _readme_has("in 2 727 von 2 727 Zufallsfällen", "(273 Fälle erfüllten sie nicht: in 272 war die Sättigung schon vor dem Sprung beendet, in einem weiteren gab es keinen Ausstieg im Horizont von 6 000 Perioden; kleinster Abstand 1,2·10⁻⁵)")
 
 
 def test_b3_approximation_deviation_in_the_24_cases():
@@ -330,9 +332,13 @@ def test_b8_frozen_random_counts_and_medians():
     assert (m["lag2"]["n"], m["lag2"]["keine"], m["lag2"]["bckp"], m["lag2"]["bed"], m["lag2"]["ilim"]) == (846, 465.5, 35, 48.5, 37)
     assert (m["osc"]["n"], m["osc"]["keine"], m["osc"]["bckp"], m["osc"]["bed"], m["osc"]["ilim"]) == (853, 408, 34, 45, 37)
     assert z["windup"] == {"mit": 2973, "ohne": 26} and round(100 * v["bckp"]["kuerzer"] / 3000, 1) == 99.4
-    _readme_has("kürzer als „Keine“ in 2 983 Fällen, gleich in 4, länger in 13 (größte Verlängerung 5 934 Perioden)", "bedingte Integration 2 978 / 3 / 19; Integratorgrenze 2 980 / 12 / 8",
+    # 5 934 = 6 000 − 66 ist ein Horizontartefakt (nie eingeschwungen); unter den eingeschwungenen Ausnahmen ist die größte Verlängerung 23 Perioden
+    eing = [e for e in z["ausnahmen"] if "bckp" in e["laenger"] and e["einschwing"]["bckp"] < D.HORIZON]
+    assert len(eing) == 6 and max(e["einschwing"]["bckp"] - e["einschwing"]["keine"] for e in eing) == 23 and len(z["nicht_eingeschwungen"]) == 7
+    _readme_has("kürzer als „Keine“ in 2 983 Fällen, gleich in 4, länger in 13 (in 7 Fällen nie eingeschwungen", "in den übrigen 6 höchstens 23 Perioden länger", "von 5 934 Perioden ist ein Artefakt des Horizonts",
+                "bedingte Integration 2 978 / 3 / 19; Integratorgrenze 2 980 / 12 / 8",
                 "erste Ordnung 461 / 30 / 40 / 31, Totzeit 447 / 48 / 63 / 50, zwei Verzögerungen 465,5 / 35 / 48,5 / 37, schwach gedämpft 408 / 34 / 45 / 37",
-                "in 2 973 von 3 000 Fällen gesättigt (26 Fälle ohne Windup)", "99,4 %", "5 347 Versuche")
+                "in 2 973 von 3 000 Fällen gesättigt (26 Fälle ohne Windup, ein weiterer ohne Ausstieg", "99,4 %", "5 347 Versuche")
 
 
 def test_b8_exceptions_by_plant_kind_and_short_saturation():

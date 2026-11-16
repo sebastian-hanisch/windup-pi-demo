@@ -349,7 +349,7 @@ def integrator_recursion(kp, ki, kaw, errors, umax=UMAX, I0=0.0) -> float:
 
 def v_after_jump(kp, ki, kaw, y_sat, r1, r2, umax=UMAX):
     """v unmittelbar nach dem Sprung bei Rückrechnung im Gleichgewicht der Sättigung: v = umax − kp·Δ + (ki/kaw − kp)·(r1 − y_sat), Δ = y_sat − r2.
-    Näherung für y ≈ y_sat und e ≈ konstant. Bei kaw > ki/kp liegt v weit unter −umax (Ursache des Unterschwingens), bei kaw = ki/kp fällt der Term mit e weg."""
+    Näherung für y ≈ y_sat und e ≈ konstant. Bei kaw > ki/kp liegt v tiefer als bei kaw = ki/kp, in Fall a1 ab kaw = 0,2 weit unter −umax (passt zum Unterschwingen), bei kaw = ki/kp fällt der Term mit e weg."""
     delta = y_sat - r2
     return umax - kp * delta + (ki / kaw - kp) * (r1 - y_sat)
 
