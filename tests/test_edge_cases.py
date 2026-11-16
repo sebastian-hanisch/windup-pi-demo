@@ -23,7 +23,7 @@ def test_t1_zero_has_no_jump_the_start_up_is_the_scenario():
 def test_t1_one_is_a_single_saturated_period():
     plant = Plant("lag1", (0.9, 0), 1.0)
     kz = simulate(plant, 2.0, 0.2, "keine", 0.0, 1, 4.7, 0.77)
-    assert kz.ausstieg == 28 and D.predict_exit(plant, 2.0, 0.2, 1, 4.7, 0.77)[0] == 28      # V15d, Fall a1 bei T₁ = 1
+    assert kz.ausstieg == 28 and D.predict_exit(plant, 2.0, 0.2, 1, 4.7, 0.77)[0] == 28      # Fall a1 bei T₁ = 1
 
 
 def test_second_setpoint_at_or_above_g_never_exits():

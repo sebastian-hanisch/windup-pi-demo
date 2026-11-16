@@ -52,7 +52,7 @@ def test_setting_specs_cover_every_preset_key():
 def test_no_preset_has_a_round_v6_scenario_or_v_exactly_on_the_limit():
     """Kein Preset nutzt die runden Zahlen (5, 60, 0,8) und keines hat v beim Ausstieg im Abstand unter 1e-3 von der Grenze (Gleichstand, den die Rundung entscheidet)."""
     for name, p in C.PRESETS.items():
-        assert (p["r1"], p["t1"], p["r2"]) != (C.V6_R1, C.V6_T1, C.V6_R2), name
+        assert (p["r1"], p["t1"], p["r2"]) != (C.B1_R1, C.B1_T1, C.B1_R2), name
         sc = ev.settings_from_values(p).scenario
         vor, abstand, status = D.predict_exit(sc.plant(), sc.kp, sc.ki, sc.t1, sc.r1, sc.r2)
         assert status == "ok" and abstand > 1e-3, (name, abstand)

@@ -44,6 +44,26 @@ def test_step_response_oscillating_by_hand():
     assert Plant("osc", (F(1), F(1, 2)), F(1)).step_response(4) == [0, F(1, 2), F(1), F(5, 4)]
 
 
+def test_two_lags_first_stage_has_gain_G_second_has_gain_one_and_u_acts_only_in_y_k_plus_2():
+    """Docstring und README: erstes Glied x1⁺ = a1·x1 + G(1 − a1)·u, zweites x2⁺ = a2·x2 + (1 − a2)·x1, y = x2; u_0 erscheint erst in y_2 (eine Periode später als bei den anderen Arten)."""
+    for g in (1.0, 2.0):
+        plant = Plant("lag2", (0.8, 0.9), g)
+        y = plant.step_response(4, 1)
+        assert y[0] == 0 and y[1] == 0                                              # u_0 wirkt noch nicht in y_1
+        assert y[2] == pytest.approx(g * (1 - 0.8) * (1 - 0.9))                     # y_2 = (1 − a2)·x1_1 mit x1_1 = G(1 − a1)
+        state = plant.state()
+        state.step(1)
+        assert state.x1 == pytest.approx(g * (1 - 0.8)) and state.x2 == 0           # erstes Glied: Verstärkung G; zweites: 1
+        assert plant.step_response(3000, 1)[-1] == pytest.approx(g, rel=1e-9)
+
+
+def test_time_position_of_the_other_plant_kinds_u_0_acts_in_y_1_or_y_1_plus_d():
+    assert Plant("lag1", (0.9, 0), 1.0).step_response(3, 1)[1] == pytest.approx(0.1)
+    assert Plant("osc", (1.6, 0.8), 1.0).step_response(3, 1)[1] == pytest.approx(0.2)
+    tot = Plant("lag1", (0.9, 3), 1.0).step_response(6, 1)
+    assert tot[:4] == [0, 0, 0, 0] and tot[4] == pytest.approx(0.1)                 # Totzeit d = 3: erst y_4 = y_(1+d)
+
+
 def test_dc_gain_of_every_plant_kind_is_G():
     for plant in (Plant("lag1", (0.9, 0), 2.0), Plant("lag1", (0.8, 3), 2.0), Plant("lag2", (0.7, 0.6), 2.0), Plant("osc", (1.2, 0.5), 2.0)):
         assert plant.step_response(3000)[-1] == pytest.approx(2.0, rel=1e-9)
@@ -110,7 +130,7 @@ def test_hand_example_exit_is_period_6_four_periods_after_the_jump(hand):
     assert kz.ausstieg == 4                                   # k = 6 minus T1 = 2; in k = 5 ist v = 9/8 noch über der Grenze (kein Gleichstand)
     assert b.v[5] == F(9, 8) and b.v[6] == F(3, 4)
     assert kz.n_sat == 4                                      # gesättigt in k = 2, 3, 4, 5
-    assert kz.einschwing == 14                                # Band ±1/100, nach der Handrechnung der Planung
+    assert kz.einschwing == 14                                # Band ±1/100, von Hand in Brüchen gerechnet
     assert kz.unter == 0 and kz.erste_einfahrt == 14          # y fällt monoton von 3/4 auf 1/4: kein Unterschwingen, die erste Einfahrt ist zugleich die endgültige
 
 
@@ -157,10 +177,10 @@ def test_hand_example_integrator_limit(hand):
 
 
 def test_hand_example_settling_times_in_both_bands(hand):
-    """Band ±1/100 (Plan, Handrechnung): 14, 6, 10, 10, 8. Band 2,5 % von r2 = 1/160 (App): 14, 7, 11, 9 (kaw = 1 hier nicht gemessen)."""
-    plan = [simulate(hand["plant"], hand["kp"], hand["ki"], v, k, 2, hand["r1"], hand["r2"], horizon=200, still=None, tol=F(1, 100)).einschwing
+    """Band ±1/100 (von Hand in Brüchen gerechnet): 14, 6, 10, 10, 8. Band 2,5 % von r2 = 1/160 (App): 14, 7, 11, 9 (kaw = 1 hier nicht gemessen)."""
+    von_hand = [simulate(hand["plant"], hand["kp"], hand["ki"], v, k, 2, hand["r1"], hand["r2"], horizon=200, still=None, tol=F(1, 100)).einschwing
             for v, k in (("keine", 0), ("bc", F(1, 2)), ("bc", F(1)), ("bed", 0), ("ilim", 0))]
-    assert plan == [14, 6, 10, 10, 8]
+    assert von_hand == [14, 6, 10, 10, 8]
     app = [simulate(hand["plant"], hand["kp"], hand["ki"], v, k, 2, hand["r1"], hand["r2"], horizon=200, still=None, tol=F(1, 160)).einschwing
            for v, k in (("keine", 0), ("bc", F(1, 2)), ("bed", 0), ("ilim", 0))]
     assert app == [14, 7, 11, 9]
@@ -191,7 +211,7 @@ def test_kz_definitions_on_the_kaw_one_run(hand):
 
 
 def test_first_entry_versus_last_exit_for_back_calculation_with_kaw_half():
-    """V6-Fall (a = 0,9; PI 2 / 0,2; 5 für 60 Perioden, dann 0,8), kaw = 0,5: y ist nach dem ersten Schritt schon im Band (erste Einfahrt 1: V6 meldete „0“), fällt danach bis 0,1321
+    """Nachbau-Fall B1 (a = 0,9; PI 2 / 0,2; 5 für 60 Perioden, dann 0,8), kaw = 0,5: y ist nach dem ersten Schritt schon im Band (erste Einfahrt 1; in der Zählung nach dem Schritt „0“), fällt danach bis 0,1321
     und ist erst nach 48 Perioden endgültig im Band (letzte Ausfahrt)."""
     kz = simulate(Plant("lag1", (0.9, 0), 1.0), 2.0, 0.2, "bc", 0.5, 60, 5.0, 0.8)
     assert kz.erste_einfahrt == 1 and kz.einschwing == 48

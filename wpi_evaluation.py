@@ -75,7 +75,7 @@ class Scenario:
 
     @property
     def reachable(self) -> bool:
-        """Ist der zweite Sollwert unter der größten erreichbaren Ausgabe G·umax (sonst bleibt er auch nach dem Sprung unerreichbar)?"""
+        """Ist der zweite Sollwert unter dem Endwert G·umax der Strecke bei dauerhaftem u = umax (sonst bleibt er auch nach dem Sprung auf Dauer unerreichbar)?"""
         return self.r2 < self.gain * D.UMAX
 
 
@@ -308,7 +308,7 @@ def _kz_dict(kz: D.Kz) -> dict:
 
 
 def compute_cases() -> dict:
-    """Die 24 Fälle der Vormessung V15b: Spektralradius und Kennzahlen der fünf Varianten (Szenario 4,7 für 57 Perioden, dann 0,77)."""
+    """Die 24 Fälle (Liste in wpi_constants.FAELLE): Spektralradius und Kennzahlen der fünf Varianten (Szenario 4,7 für 57 Perioden, dann 0,77)."""
     out = {}
     for cid, _label, kind, par, gain, kp, ki in C.FAELLE:
         plant = Plant(kind, par, gain)
@@ -323,7 +323,7 @@ def compute_cases() -> dict:
 
 
 def random_cases(n: int = C.RANDOM_N, seed: int = C.RANDOM_SEED, rho_max: float = C.RANDOM_RHO_MAX) -> tuple[list[dict], int]:
-    """Zufallsfälle der Vormessung V15g mit SplitMix64 (Zufalls-Seed 1506): Strecke zufällig aus vier Arten, PI-Satz mit ρ < 0,97, T1 5 bis 149, r1 = 1,5 bis 6·G, r2 = 0,2 bis 0,9·G.
+    """Zufallsfälle mit SplitMix64 (Zufalls-Seed 1506): Strecke zufällig aus vier Arten, PI-Satz mit ρ < 0,97, T1 5 bis 149, r1 = 1,5 bis 6·G, r2 = 0,2 bis 0,9·G.
     Logarithmen und Kosinus über `exact_log`/`exact_cos` (bitgleich auf jeder Plattform). Rückgabe (Fälle, Versuche)."""
     rng = SplitMix64(seed)
 
@@ -450,7 +450,7 @@ def verdict_windup(a: Analysis) -> tuple[str, str]:
     k0 = a.keine.kz
     kb = a.row("bc_kp").kz
     if not sc.reachable:
-        return "warning", (f"Der zweite Sollwert r₂ = {de(sc.r2)} liegt nicht unter der größten erreichbaren Ausgabe G·umax = {de(sc.gain * D.UMAX)}: "
+        return "warning", (f"Der zweite Sollwert r₂ = {de(sc.r2)} liegt nicht unter dem Endwert G·umax = {de(sc.gain * D.UMAX)} (der Ausgabe, die auf Dauer erreichbar ist): "
                            "Er bleibt auch nach dem Sprung unerreichbar, die Stellgröße bleibt an der Grenze, es gibt keinen Ausstieg und keine Einschwingzeit.")
     if k0.divergiert:
         return "warning", "Ohne Anti-Windup divergiert der Integrator in diesem Szenario; die Kennzahlen entfallen."
@@ -473,7 +473,7 @@ def verdict_windup(a: Analysis) -> tuple[str, str]:
 
 
 def verdict_cost(a: Analysis, counts: dict | None = None) -> tuple[str, str]:
-    """Kernfrage 2: Was kostet das Gegenmittel? Aktuelles Szenario: Unterschwingen je Variante; dazu die Zählung über die 24 Fälle der Vormessung (`counts` aus `case_counts`)."""
+    """Kernfrage 2: Was kostet das Gegenmittel? Aktuelles Szenario: Unterschwingen je Variante; dazu die Zählung über die 24 vorgerechneten Fälle (`counts` aus `case_counts`)."""
     sc = a.settings.scenario
     parts = []
     for r in a.rows:
@@ -488,7 +488,7 @@ def verdict_cost(a: Analysis, counts: dict | None = None) -> tuple[str, str]:
     else:
         text = "Im gewählten Szenario kommt y beim Sprung nicht von oben auf r₂ zu; ein Unterschwingen im Sinne der Messung gibt es nicht. "
     if counts:
-        text += (f"In den 24 Fällen der Vormessung unterschwingt die Rückrechnung mit kaw = 0,5 in {counts['bc05']['unter_gross']} von 24 um mehr als 0,05 "
+        text += (f"In den 24 vorgerechneten Fällen (Experiment 3) unterschwingt die Rückrechnung mit kaw = 0,5 in {counts['bc05']['unter_gross']} von 24 um mehr als 0,05 "
                  f"(größtes {de(counts['bc05']['unter_max'])}), die bedingte Integration in {counts['bed']['unter_gross']} von 24, die Rückrechnung mit kaw = ki/kp in "
                  f"{counts['bckp']['unter_gross']} von 24 (größtes {de(counts['bckp']['unter_max'])}).")
     return "info", text
@@ -508,7 +508,7 @@ def verdict_notwhen(a: Analysis, random_summary: dict | None = None) -> tuple[st
     if random_summary:
         v = random_summary["vergleich"]["bckp"]
         n = random_summary["n"]
-        text += (f"In {fmt_int(n)} Zufallsfällen der Vormessung ist die Rückrechnung mit kaw = ki/kp in {fmt_int(v['kuerzer'])} kürzer als „Keine“, in {v['gleich']} gleich und in {v['laenger']} länger; "
+        text += (f"In {fmt_int(n)} Zufallsfällen (vorgerechnet, Experiment 6) ist die Rückrechnung mit kaw = ki/kp in {fmt_int(v['kuerzer'])} kürzer als „Keine“, in {v['gleich']} gleich und in {v['laenger']} länger; "
                  f"{len(random_summary['nicht_eingeschwungen'])} davon schwingen in {fmt_int(D.HORIZON)} Perioden nicht ein.")
     return kind, text
 

@@ -3,12 +3,12 @@
 (a) Ausstieg aus der Sättigung: Vorhersage aus der offenen Stufenantwort und Summen gegen die Regler-Simulation (kleine Zufallsmenge mit festem Zufalls-Seed; exakter Vergleich nur
     dort, wo der Abstand von v zur Grenze über 1e-6 liegt, sonst wäre er ein Gleichstand, den die Rundung entscheidet).
 (b) Brüche (`fractions`) gegen Gleitkomma: dieselbe Bahn, Abweichung unter 1e-12.
-(c) Rekursion I⁺ = (1 − kaw)·I + (ki − kaw·kp)·e + kaw in der Sättigung gegen die Simulation (V15e: 4,925 gegen 4,925).
+(c) Rekursion I⁺ = (1 − kaw)·I + (ki − kaw·kp)·e + kaw in der Sättigung gegen die Simulation (Fall a1: 4,925 gegen 4,925).
 (d) Identität Σe = (kaw/ki)·Σ(v − u) + ΔI/ki aus demselben Lauf.
 (e) Spektralradius der linearen Schleife aus den Nullstellen des charakteristischen Polynoms gegen die Eigenwerte der Zustandsmatrix.
 (f) Stufenantwort der Strecke gegen `scipy.signal.dlsim` (Zustandsraummodell aus `Plant.matrices`).
 (g) Die ganze Regelschleife gegen eine zweite Implementierung mit Matrizen (numpy) statt der Zustandsobjekte des Kerns.
-Referenzwerte: Handrechnung in tests/test_dynamics.py; die Vormessungszahlen stehen in tests/test_claims.py."""
+Referenzwerte: Handrechnung in tests/test_dynamics.py; die Zahlen der README stehen in tests/test_claims.py."""
 
 from fractions import Fraction as F
 
@@ -72,7 +72,7 @@ def test_v6_case_in_fractions_exits_at_1215_and_in_floating_point_at_1216():
 
 @pytest.mark.parametrize("kaw", [0.5, 1.0, 1.5])
 def test_saturation_recursion_equals_the_simulation(kaw):
-    """V15e: Fall a1, 57 gesättigte Perioden: |I| = 4,925 (kaw = 0,5), 5,665 (1,0), 5,913 (1,5) in Simulation und Rekursion (mit den Fehlern des Laufs)."""
+    """Fall a1, 57 gesättigte Perioden: |I| = 4,925 (kaw = 0,5), 5,665 (1,0), 5,913 (1,5) in Simulation und Rekursion (mit den Fehlern des Laufs)."""
     plant = Plant("lag1", (0.9, 0), 1.0)
     kz, b = simulate(plant, 2.0, 0.2, "bc", kaw, 57, 4.7, 0.77, horizon=2, still=None, record=True)
     # Die Rekursion gilt nur, solange v gesättigt bleibt. Bei kaw = 1,5 dippt v in den ersten Perioden unter die Grenze (−2,46 in k = 1, 0,87 in k = 2); die Rekursion ist

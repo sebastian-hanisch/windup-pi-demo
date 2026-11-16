@@ -1,10 +1,10 @@
-"""Konstanten: Reglergrenzen, feste Annahmen, Farben, die 24 Fälle der Vormessung und die Presets (Schnellstart)."""
+"""Konstanten: Reglergrenzen, feste Annahmen, Farben, die 24 Fälle und die Presets (Schnellstart)."""
 
 from wpi_dynamics import Plant
 
-# --- Szenario der Messungen (Plan, Vormessung V15): unerreichbarer Sollwert r1 für T1 Perioden, danach r2 ---------------------------------------
+# --- Szenario der Messungen: unerreichbarer Sollwert r1 für T1 Perioden, danach r2 ---------------------------------------
 SZ_T1, SZ_R1, SZ_R2 = 57, 4.7, 0.77   # ungerundet gewählt: bei den runden Zahlen (5, 60, 0,8) fällt der Ausstieg auf einen Gleichstand v = 1 (README, B1)
-V6_T1, V6_R1, V6_R2 = 60, 5.0, 0.8     # der Gleichstandsfall, nur als Nachbau in den Tests und in der README (kein Preset)
+B1_T1, B1_R1, B1_R2 = 60, 5.0, 0.8     # der Gleichstandsfall, nur als Nachbau in den Tests und in der README (kein Preset)
 
 # --- Regler der Seitenleiste: (Minimum, Maximum) -------------------------------------------------------------------------------------------------
 KINDS = ("lag1", "tot", "lag2", "osc")
@@ -30,12 +30,12 @@ SEED_MAX = 999999
 KAW4_MIN, KAW4_MAX = 0.01, 2.5      # Experiment 4: eigener Regler, nicht Teil der Presets
 
 # --- Experimente ----------------------------------------------------------------------------------------------------------------------------------
-T1_SWEEP = (1, 2, 3, 5, 10, 20, 40, 60, 120, 240)      # Experiment 2 (Vormessung V15d)
+T1_SWEEP = (1, 2, 3, 5, 10, 20, 40, 60, 120, 240)      # Experiment 2
 KAW_GRID = (0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0, 1.5, 1.9, 2.0, 2.1, 2.5)   # Experiment 4: Kurve (dazu ki/kp und der Regler)
 NOISE_AMPLITUDES = (0.2, 0.4, 0.8)
-NOISE_PERIODS, NOISE_WARM, NOISE_DEFAULT_SEED = 22000, 2000, 15     # V15f: 20 000 Perioden nach 2 000 Einschwingperioden
+NOISE_PERIODS, NOISE_WARM, NOISE_DEFAULT_SEED = 22000, 2000, 15     # 20 000 Perioden nach 2 000 Einschwingperioden
 NOISE_KAWS = (0.05, 0.5, 1.0)
-RANDOM_SEED, RANDOM_N, RANDOM_RHO_MAX = 1506, 3000, 0.97            # V15g
+RANDOM_SEED, RANDOM_N, RANDOM_RHO_MAX = 1506, 3000, 0.97            # Experiment 6 und B8
 
 # --- Farben ----------------------------------------------------------------------------------------------------------------------------------------
 COLOR_Y = "#2F6B65"
@@ -46,7 +46,7 @@ COLOR_R = "#555555"
 COLOR_BAND = "rgba(47,107,101,0.15)"
 VARIANT_COLOR = {"keine": "#c0504d", "bc": "#2F6B65", "bed": "#4c78a8", "ilim": "#e69f00"}
 
-# --- Die 24 Fälle der Vormessung V15b: (Kennung, Streckenart, Parameter, Verstärkung G, kp, ki) -----------------------------------------------------
+# --- Die 24 Fälle: (Kennung, Streckenart, Parameter, Verstärkung G, kp, ki) -----------------------------------------------------
 FAELLE = (
     ("a1", "Erste Ordnung, a = 0,9", "lag1", (0.9, 0), 1.0, 2.0, 0.2),
     ("a2", "Erste Ordnung, a = 0,9", "lag1", (0.9, 0), 1.0, 0.5, 0.05),

@@ -95,9 +95,20 @@ Ein **PI-Regler** rechnet linear; die **Stellgrenze** schneidet nur hinter dem R
 und hält die Stellgröße noch lange an der Grenze, nachdem der Sollwert längst erreichbar ist (**Windup**). Die Demo misst, wie lange das dauert, was die drei gängigen Gegenmittel
 (**Rückrechnung**, **bedingte Integration**, **Integratorgrenze**) kosten und wann sie selbst Schaden anrichten. Alles ist eigene Messung in diesem Modell, bei diesen Parametern.
 
-Weiter unten: die **❓ Kernfragen**, die Experimente 2 bis 6, **🚧 Wo die Annahmen enden** und der Expander **📐 Mathematische Formulierung**.
+Wer das Problem zuerst ohne Fachbegriffe verstehen will, öffnet „💬 In einfachen Worten“. Weiter unten: die **❓ Kernfragen**, die Experimente 2 bis 6, **🚧 Wo die Annahmen enden** und der Expander **📐 Mathematische Formulierung**.
 """
 )
+
+# erklaerseite:einfach:start (erzeugt von tools/set_demo_explainer.py (Website-Repo) aus tools/content/explainers/windup-erklaert.json, nicht von Hand ändern)
+with st.expander("💬 In einfachen Worten"):
+    st.markdown(
+        """
+Stellen Sie sich eine Klimaanlage mit Regler vor. Der Regler führt ein **Fehlerkonto**, auf dem er die Abweichung von der Wunschtemperatur Periode für Periode aufaddiert (der **Integrator**). Die Anlage hat aber eine **Stellgrenze**: Mehr als Höchstleistung geht nicht, und das Konto weiß davon nichts. Ist der Wunsch lange unerreichbar, wächst das Konto weiter. Wird er später erreichbar, hält das volle Konto die Leistung noch lange am Anschlag: **Windup**. Die Demo misst in diesem Modell, wie lange das dauert, was die Gegenmittel (**Rückrechnung**, **bedingte Integration**, **Integratorgrenze**) kosten und wann sie nicht helfen. Alles gilt für dieses Rechenmodell, nicht für eine echte Anlage.
+
+[Ausführlich und verständlich erklärt, mit Fachteil](https://sebastianhanisch.net/windup-erklaert.html)
+        """
+    )
+# erklaerseite:einfach:end
 
 with st.expander("So funktioniert Windup", expanded=True):
     st.markdown(
@@ -119,7 +130,7 @@ with st.sidebar:
     st.header("⚙️ Einstellungen")
     st.markdown("**Strecke** (Abtastzeit 1)")
     kind = st.selectbox("Streckenart", C.KINDS, key="kind_select", format_func=C.KIND_NAME.get,
-                        help="Erste Ordnung: y⁺ = a·y + G(1 − a)·u. Mit Totzeit: u wirkt d Perioden später. Zwei Verzögerungen: zwei Glieder erster Ordnung in Reihe. Schwach gedämpft: Pole mit Radius r und Winkel θ.")
+                        help="Erste Ordnung: y⁺ = a·y + G(1 − a)·u. Mit Totzeit: u wirkt d Perioden später. Zwei Verzögerungen: zwei Glieder erster Ordnung in Reihe (das erste mit Verstärkung G, das zweite mit 1); u wirkt erst in y_(k+2), eine Periode später als bei den anderen Arten. Schwach gedämpft: Pole mit Radius r und Winkel θ.")
     st.slider("Pol a (a₁; bei „schwach gedämpft“ der Polradius r)", *bounds("a1_slider"), step=0.01, key="a1_slider",
               help="Je näher an 1, desto träger die Strecke.")
     st.slider("Zweiter Pol a₂ (nur bei zwei Verzögerungen)", *bounds("a2_slider"), step=0.01, key="a2_slider", disabled=kind != "lag2",
@@ -129,7 +140,7 @@ with st.sidebar:
     st.slider("Polwinkel θ (nur bei schwach gedämpft)", *bounds("theta_slider"), step=0.01, key="theta_slider", disabled=kind != "osc",
               help="Wirkt nur bei der schwach gedämpften Strecke: c₁ = 2·r·cos θ, c₀ = r².")
     st.slider("Verstärkung G der Strecke", *bounds("gain_slider"), step=0.1, key="gain_slider",
-              help="Mit Stellgrenze 1 erreicht y höchstens G. Ein Sollwert über G ist unerreichbar.")
+              help="Gleichstromverstärkung: Bei dauerhaftem u = 1 läuft y gegen G; die schwach gedämpfte Strecke kann dabei zwischendurch über G hinausschwingen. Ein Sollwert über G bleibt auf Dauer unerreichbar.")
     st.markdown("**PI-Regler**")
     st.slider("kp", *bounds("kp_slider"), step=0.1, key="kp_slider", help="Proportionalverstärkung.")
     st.slider("ki", *bounds("ki_slider"), step=0.01, key="ki_slider", help="Integralverstärkung (je Periode).")
@@ -162,7 +173,7 @@ a = _analysis(settings)
 sel, ref = a.selected.kz, a.keine.kz
 
 if a.rho >= 1:
-    st.warning(f"Die lineare Schleife (ohne Stellgrenze) ist mit diesen Reglerwerten nicht stabil (Spektralradius ρ = {de(a.rho, 3)}); die Kennzahlen unten gelten trotzdem für die Schleife mit Stellgrenze, sind aber nicht die Messreihe der Vormessung.")
+    st.warning(f"Die lineare Schleife (ohne Stellgrenze) ist mit diesen Reglerwerten nicht stabil (Spektralradius ρ = {de(a.rho, 3)}); die Kennzahlen unten gelten trotzdem für die Schleife mit Stellgrenze, gehören aber nicht zu den vorgerechneten Messreihen (dort ist die lineare Schleife stabil).")
 
 st.caption("Einschwingzeit und Ausstieg zählen in Perioden ab dem Sprung auf r₂.")
 m1, m2, m3, m4 = st.columns(4)
@@ -271,8 +282,8 @@ st.markdown("---")
 
 # --- Experiment 3: 24 Fälle (vorgerechnet) --------------------------------------------------------------------------------------------------------
 
-st.subheader("🔬 Experiment 3: Drei Streckenarten, 24 Parametersätze (vorgerechnet)")
-st.caption("Vorgerechnet mit `tools/make_frozen.py` (data/wpi_frozen.json): Szenario r₁ = 4,7 für 57 Perioden, dann r₂ = 0,77. Acht Parametersätze je Streckenart (erste Ordnung, zwei Verzögerungen und eine schwach gedämpfte Strecke, Totzeit), jeder mit linearer Schleife stabil.")
+st.subheader("🔬 Experiment 3: Vier Streckenarten, 24 Parametersätze (vorgerechnet)")
+st.caption("Vorgerechnet mit `tools/make_frozen.py` (data/wpi_frozen.json): Szenario r₁ = 4,7 für 57 Perioden, dann r₂ = 0,77. Drei Gruppen zu je acht Parametersätzen: erste Ordnung (a), zwei Verzögerungen und schwach gedämpft (b), erste Ordnung mit Totzeit (c); jeder Satz hat eine stabile lineare Schleife. Die vollständige Liste steht in der README.")
 case_id = st.selectbox("Fall", C.CASE_IDS, key="case_select", format_func=C.case_label)
 st.plotly_chart(build_cases(frozen["faelle"][case_id]), width="stretch", key="cases_chart")
 st.dataframe(
@@ -333,7 +344,7 @@ bc_row = next((x for x in rows5 if x["variant"] == "bc" and not x["divergiert"] 
 if bc_row is not None and "identity_left" in bc_row:
     st.markdown(
         f"**Exakte Identität** (Summen desselben Laufs, Rückrechnung kaw = 0,5): Σe = (kaw/ki)·Σ(v − u) + (I_Ende − I_Start)/ki, links {de(bc_row['identity_left'], 4)}, rechts {de(bc_row['identity_right'], 4)}. "
-        "Ohne Rückrechnung ist das Mittel des Fehlers damit Null; mit Rückrechnung gleich kaw/ki mal dem mittleren Abschneiden."
+        "Ohne Rückrechnung ist das Mittel des Fehlers damit Null, sobald I beschränkt bleibt und die Zahl der Perioden groß wird; mit Rückrechnung ist es gleich kaw/ki mal dem mittleren Abschneiden (bis auf denselben Randterm)."
     )
 kind_, text = ev.verdict_noise(rows5, float(noise_r), float(amp))
 getattr(st, kind_)(text)
@@ -388,7 +399,7 @@ st.markdown(
 | Annahme | Was passiert, wenn sie verletzt ist | Wer setzt an |
 |---|---|---|
 | **Sollwert nach dem Sprung erreichbar** (r₂ < G) | Sonst bleibt die Stellgröße an der Grenze: kein Ausstieg, keine Einschwingzeit (die App meldet „nie“). | – |
-| **PI-Regler, symmetrische Grenze, stabile Strecke** (drei Streckenarten) | Instabile Strecken, Strecken mit Nullstelle rechts, PID, Rate-Limit, asymmetrische Grenzen, Mehrgrößenregelung: nicht gemessen. | – |
+| **PI-Regler, symmetrische Grenze, stabile Strecke** (vier Streckenarten) | Instabile Strecken, Strecken mit Nullstelle rechts, PID, Rate-Limit, asymmetrische Grenzen, Mehrgrößenregelung: nicht gemessen. | – |
 | **Sollwertsprung statt Störung** | Ein Lastsprung am Eingang mit anschließendem Wegfall ist nicht gemessen. | – |
 | **kaw = ki/kp** | Eigene Messung in einem Szenario (lange Sättigung, dann erreichbarer Sollwert); die Quelle für diese Wahl ist nicht gelesen. Bei kurzer Sättigung oder Sollwertfolge nicht abgestimmt. | – |
 | **Rückrechnung aus der Sättigungsfunktion** | Rückrechnung aus dem gemessenen Stellglied statt aus der Sättigungsfunktion ist nicht gemessen. | – |
@@ -403,14 +414,14 @@ st.markdown(
 st.markdown("---")
 
 with st.expander("📐 Mathematische Formulierung"):
+    # erklaerseite:lesehilfe:start (erzeugt von tools/set_demo_explainer.py (Website-Repo) aus tools/content/explainers/windup-erklaert.json, nicht von Hand ändern)
     st.markdown(
         r"""
-**Gegeben und gesucht.** Gegeben sind eine stabile Strecke mit Gleichstromverstärkung $G$, ein PI-Regler mit Stellgrenze $|u| \le 1$ und eine Sollwertfolge ($r_1$ für $T_1$ Perioden, danach $r_2 < G$).
-Gesucht sind die Perioden bis zum Ausstieg aus der Sättigung und bis zum Einschwingen, je Anti-Windup-Variante.
+**Lesehilfe.** Gegeben sind eine stabile Strecke mit Gleichstromverstärkung $G$, ein PI-Regler mit Stellgrenze $|u| \le 1$ und eine Sollwertfolge ($r_1$ für $T_1$ Perioden, danach ein erreichbarer Sollwert $r_2$ unterhalb von $G$). Gesucht sind die Perioden bis zum Ausstieg aus der Sättigung und bis zum Einschwingen, je Anti-Windup-Variante.
 
 | Symbol | Bedeutung |
 |---|---|
-| $y_k, r_k$ | Ausgang und Sollwert am Anfang der Periode $k$ |
+| $y_k$, $r_k$ | Ausgang und Sollwert am Anfang der Periode $k$ |
 | $e_k = r_k - y_k$ | Fehler |
 | $I_k$ | Integratorzustand vor dem Update |
 | $v_k$, $u_k$ | Reglerausgang vor und nach der Grenze, $u_k = \operatorname{sat}(v_k)$ |
@@ -419,10 +430,21 @@ Gesucht sind die Perioden bis zum Ausstieg aus der Sättigung und bis zum Einsch
 | $s_k$ | offene Stufenantwort der Strecke auf $u = 1$ ab Nullzustand |
 | $T_1$ | Dauer des ersten Sollwerts $r_1$ in Perioden |
 
+[Schritt für Schritt erklärt, mit Herleitung und Literatur](https://sebastianhanisch.net/windup-erklaert.html#fachleute)
+        """
+    )
+    # erklaerseite:lesehilfe:end
+    st.markdown(
+        r"""
 **Strecke (erster Ordnung) und Regler.**
 $$y_{k+1} = a\,y_k + G(1-a)\,u_k$$
 $$e_k = r_k - y_k, \qquad v_k = k_p e_k + I_k, \qquad u_k = \operatorname{sat}(v_k)$$
 $$I_{k+1} = I_k + k_i e_k + (\text{Anti-Windup-Term})$$
+
+**Die anderen Streckenarten** (jede mit Gleichstromverstärkung $G$, dem Endwert bei dauerhaftem $u = 1$; die schwach gedämpfte Strecke kann dabei zwischendurch über $G$ hinausschwingen). Mit Totzeit $d$ steht $u_{k-d}$ statt $u_k$ (die Eingaben vor $k = 0$ sind 0). Zwei Verzögerungen in Reihe mit den Polen $a_1$, $a_2$ (das erste Glied hat die Verstärkung $G$, das zweite 1; $u_k$ wirkt erst in $y_{k+2}$):
+$$x_{1,k+1} = a_1 x_{1,k} + G(1-a_1)\,u_k, \qquad x_{2,k+1} = a_2 x_{2,k} + (1-a_2)\,x_{1,k}, \qquad y_k = x_{2,k}$$
+Schwach gedämpft, in der App über Polradius $r$ und Winkel $\theta$:
+$$y_{k+1} = c_1 y_k - c_0 y_{k-1} + G(1 - c_1 + c_0)\,u_k, \qquad c_1 = 2r\cos\theta, \qquad c_0 = r^2$$
 
 **Die vier Varianten** (eigene Festlegungen in diesem Modell; die Namen folgen der Literatur):
 $$\text{keine: } I_{k+1} = I_k + k_i e_k$$
@@ -436,7 +458,7 @@ $$N_{\text{Ausstieg}} = \min\{\, j \ge T_1 : k_p (r_2 - s_j) + I_j \le 1 \,\} - 
 Näherung für lange Sättigung mit $S = \sum_{k<T_1}(r_1 - s_k)$ und $\Delta = G - r_2$, und der Zuwachs je gesättigter Periode:
 $$N_{\text{Ausstieg}} \approx \frac{S}{\Delta} - \frac{1 + k_p \Delta}{k_i \Delta}, \qquad \frac{dN}{dT_1} \approx \frac{r_1 - G}{G - r_2}$$
 
-**Rückrechnung in der Sättigung** (solange $v$ gesättigt bleibt, also $u = 1$):
+**Rückrechnung in der Sättigung** (solange $v$ gesättigt bleibt; ausgeschrieben für die obere Grenze $u = 1$, an der unteren gilt dasselbe gespiegelt, mit $-k_{aw}$ statt $+k_{aw}$ und $-1$ statt $+1$ im Gleichgewicht):
 $$I_{k+1} = (1 - k_{aw})\, I_k + (k_i - k_{aw} k_p)\, e_k + k_{aw}, \qquad I^\ast = 1 + \left(\frac{k_i}{k_{aw}} - k_p\right) e$$
 Die Rekursion ist für $0 < k_{aw} < 2$ stabil (Faktor $|1 - k_{aw}|$). Bei $k_{aw} > k_i/k_p$ liegt $v$ nach dem Sprung tiefer als bei $k_{aw} = k_i/k_p$, in Fall a1 ab $k_{aw} = 0{,}2$ weit unter $-1$; bei $k_{aw} = k_i/k_p$ fällt der Term mit $e$ weg.
 
@@ -446,7 +468,7 @@ Ohne Rückrechnung ($k_{aw} = 0$) ist das Mittel des Fehlers damit Null, sobald 
 
 **Lineare Schleife** (ohne Stellgrenze, erste Ordnung ohne Totzeit): charakteristisches Polynom
 $$z^2 - (1 + a - b k_p)\, z + (a - b k_p + b k_i) = 0$$
-Der Spektralradius ist der größte Betrag der Nullstellen (allgemein: der größte Eigenwert der Zustandsmatrix aus Strecke und Integrator).
+Der Spektralradius ist der größte Betrag der Nullstellen (allgemein: der größte Eigenwertbetrag der Zustandsmatrix aus Strecke und Integrator).
 
 **Literatur und Quellen.**
 - Åström/Murray, *Feedback Systems*: Integrator-Windup und Rückrechnung (Abschnitt 11.4 der 2. Auflage, Kapitel-PDF von 2019; die 1. Auflage, Fassung Februar 2009, führt den Abschnitt als 10.4). Die Quellenberichte nennen beide Nummern, nicht gegen die gedruckte Ausgabe geprüft. Gelesen ist der Fließtext: Bei gesättigtem Stellglied ist der Regelkreis aufgetrennt, der Integralterm läuft weiter hoch; Gegenmittel ist die Rückführung des Sättigungsfehlers über $k_{aw}$ in den Integrator; ein Vielfaches von $k_i$ sei eine vernünftige Wahl; ein zu großes $k_{aw}$ lasse Messrauschen den Integrator zurücksetzen. Zahlen und Abbildungsparameter des Kapitels sind nicht übernommen (die Angaben zu $k_i$ widersprechen sich im Kapitel). Die Bedingung $k_{aw} > k_i/k_p$ aus Übung 11.13 gilt in stetiger Zeit (Kreiskriterium) und ist hier nicht nachgerechnet; die gemessene Grenze $k_{aw} = k_i/k_p$ für das Unterschwingen in diesem diskreten Modell ist ein anderer Befund. „Bedingte Integration“ steht dort als Name in Übung 11.12; die Regel oben ist eigene Festlegung.
@@ -459,5 +481,5 @@ st.markdown("---")
 st.caption(
     "Diese Demo ist Teil des Portfolios von [Sebastian Hanisch](https://sebastianhanisch.net) – "
     "Operations Research und Machine Learning ([Über mich](https://sebastianhanisch.net/ueber-mich.html)). "
-    "Mehr zu den Demos: [Interaktive Demos](https://sebastianhanisch.net/demos.html)."
+    "Mehr zur Reihe: [Regelung von LQR bis MPC: vom Plan zur Regel](https://sebastianhanisch.net/konzepte-regelung.html)."
 )

@@ -44,7 +44,7 @@ def _a1():
     return C.case_plant("a1")
 
 
-# --- B1: V6 nachgebaut ----------------------------------------------------------------------------------------------------------------------------
+# --- B1: Nachbau eines früheren Falls ----------------------------------------------------------------------------------------------------------------------------
 
 def test_b1_v6_tie_exit_1215_in_fractions_and_1216_in_floating_point():
     kz = simulate(Plant("lag1", (F(9, 10), 0), F(1)), F(2), F(1, 5), "keine", F(0), 60, F(5), F(4, 5), horizon=1300, still=None, tol=F(2, 100))
@@ -65,8 +65,8 @@ def test_b1_v6_tie_exit_1215_in_fractions_and_1216_in_floating_point():
     _readme_has("1 215 Perioden", "1 216", "1 244", "1 243", "unter 10⁻⁵⁰", "Ausstieg 1 215 bis 1 216, Einschwingzeit 1 242 bis 1 244")
 
 
-def test_b1_v6_old_measure_first_entry_after_the_step_was_1243():
-    """Die Vormessung speicherte y nach dem Schritt und zählte die erste Einfahrt (|y − 0,8| < 0,02): ohne Anti-Windup 1 243, mit Rückrechnung kaw = 0,5 sofort (0)."""
+def test_b1_rebuild_other_count_first_entry_after_the_step_is_1243():
+    """Zählt man y nach dem Schritt und die erste Einfahrt (|y − 0,8| < 0,02) statt y vor dem Schritt und die letzte Ausfahrt: ohne Anti-Windup 1 243, mit Rückrechnung kaw = 0,5 sofort (0)."""
     plant = Plant("lag1", (0.9, 0), 1.0)
     for variant, kaw, expected in (("keine", 0.0, 1243), ("bc", 0.5, 0)):
         _kz, b = simulate(plant, 2.0, 0.2, variant, kaw, 60, 5.0, 0.8, horizon=1400, still=None, record=True)
@@ -75,7 +75,7 @@ def test_b1_v6_old_measure_first_entry_after_the_step_was_1243():
         assert first == expected, variant
 
 
-def test_b1_v6_back_calculation_passes_through_the_band_and_undershoots():
+def test_b1_rebuild_back_calculation_passes_through_the_band_and_undershoots():
     plant = Plant("lag1", (0.9, 0), 1.0)
     kz, b = simulate(plant, 2.0, 0.2, "bc", 0.5, 60, 5.0, 0.8, horizon=300, still=None, record=True)
     assert b.y[61] == pytest.approx(0.798, abs=5e-4)        # nach einem Schritt im Band
@@ -266,7 +266,7 @@ def test_b6_recursion_and_upper_limit_of_kaw():
 
 
 def test_b6_kaw_2_5_diverges_only_with_the_long_saturation():
-    """Korrektur gegenüber dem Plan: im Handbeispiel (T1 = 2) ist die Einschwingzeit bei kaw = 2,5 elf Perioden (Experiment 4, Preset „Von Hand“)."""
+    """Präzisierung: im Handbeispiel (T1 = 2) ist die Einschwingzeit bei kaw = 2,5 elf Perioden (Experiment 4, Preset „Von Hand“)."""
     sc = ev.settings_from_values(C.PRESETS[C.HAND]).scenario
     rows = ev.kaw_curve(sc, 2.5)
     r25 = next(r for r in rows if abs(r["kaw"] - 2.5) < 1e-9)
@@ -441,10 +441,10 @@ def test_b10_app_hand_example_in_fractions_matches_the_kernel():
     assert next(r["k"] for r in rows if r["k"] >= 2 and abs(r["v"]) <= 1) == 6
 
 
-# --- Korrekturen gegenüber dem Plan --------------------------------------------------------------------------------------------------------------
+# --- Präzisierungen zu einzelnen Zahlen --------------------------------------------------------------------------------------------------------------
 
 def test_correction_rausch_preset_with_t1_zero_would_have_a_tie_at_the_exit():
-    """Der Plan sah Sollwert 0,9 bei T1 = 0 vor; dabei liegt v beim Ausstieg bis auf 9·10⁻¹⁶ auf der Grenze (Gleichstand): deshalb ein eigener Sollwert-Regler im Rauschexperiment."""
+    """Mit Sollwert 0,9 bei T1 = 0 läge v beim Ausstieg bis auf 9·10⁻¹⁶ auf der Grenze (Gleichstand): deshalb ein eigener Sollwert-Regler im Rauschexperiment."""
     plant, kp, ki = _a1()
     _vor, abstand, status = D.predict_exit(plant, kp, ki, 0, 0.9, 0.9)
     assert status == "ok" and abstand < 1e-12 and abstand == pytest.approx(9e-16, abs=5e-16)
@@ -456,3 +456,97 @@ def test_readme_quotes_the_sources_without_numbers_from_the_chapter_and_without_
     flat = README.replace(NB, " ")
     assert "Keine Zahl aus dem Kapitel ist übernommen" in flat and "in eigenen Worten" in flat
     assert re.search(r"Abschnitt 11\.4 der 2\. Auflage bzw\. 10\.4 der 1\. Auflage", flat)
+
+
+# --- Ergänzungen: Voraussetzungen der Zahlen, Fallliste, Zufallsverteilungen ------------------------------------------------------------------------
+
+def test_b2_undershoot_count_over_005_depends_on_the_fixed_kaw():
+    """README (Kopf und B2): Rückrechnung mit festem kaw = 0,01 / 0,02 / 0,05 / 0,1 / 0,2 / 0,5 / 1,0 unterschwingt in 1 / 1 / 2 / 9 / 17 / 23 / 24 von 24 Fällen um mehr als 0,05 (absolute Schwelle)."""
+    counts = [sum(_run(cid, "bc", k).unter > 0.05 for cid in C.CASE_IDS) for k in (0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0)]
+    assert counts == [1, 1, 2, 9, 17, 23, 24]
+    _readme_has("Unterschwingen über 0,05 bei Rückrechnung mit festem kaw = 0,01 / 0,02 / 0,05 / 0,1 / 0,2 / 0,5 / 1,0: in 1 / 1 / 2 / 9 / 17 / 23 / 24 von 24 Fällen",
+                "sind es 1 / 2 / 9 / 17 / 24 von 24 für kaw = 0,01 / 0,05 / 0,1 / 0,2 / 1,0", "Die Schwelle „Unterschwingen über 0,05“ der Befunde ist absolut")
+    assert round(0.05 / C.SZ_R2 * 100, 1) == 6.5
+
+
+def test_b2_case_a8_has_the_short_windup_because_g_is_two_slope_2_2_instead_of_16_1():
+    plant, kp, ki = C.case_plant("a8")
+    kz = simulate(plant, kp, ki, "keine", 0.0, *SZ)
+    assert (kz.ausstieg, kz.einschwing) == (133, 162)
+    aus = {t: simulate(plant, kp, ki, "keine", 0.0, t, C.SZ_R1, C.SZ_R2).ausstieg for t in (120, 240)}
+    assert 2.19 <= (aus[240] - aus[120]) / 120 <= 2.21
+    assert D.exit_slope(plant, C.SZ_R1, C.SZ_R2) == pytest.approx((4.7 - 2) / (2 - 0.77))
+    _readme_has("Fall a8 ist kürzer, weil G = 2 den Abstand zum zweiten Sollwert von 0,23 auf 1,23 vergrößert", "nur um 2,2 statt 16,1 Perioden je gesättigter Periode", "2,7/1,23 = 2,195")
+
+
+def test_a1_preset_long_saturation_exit_929_and_settling_959():
+    kz = _run("a1", "keine")
+    assert (kz.ausstieg, kz.einschwing) == (929, 959)
+    assert "929 Perioden" in C.PRESET_HELP[C.LANG]
+    _readme_has("bleibt die Stellgröße nach dem Sprung 929 Perioden an der Grenze (Ausstieg), die Einschwingzeit ist 959")
+
+
+def test_step_response_overshoot_of_the_oscillating_plant_above_g_but_not_of_the_others():
+    """README (Modell, Strecken): y erreicht bei dauerhaftem u = 1 den Endwert G; die schwach gedämpfte Strecke schwingt zwischendurch darüber (1,48 in b5/b6, 1,53 im Preset)."""
+    for cid in ("b5", "b6"):
+        plant, _kp, _ki = C.case_plant(cid)
+        step = plant.step_response(400, 1)
+        assert max(step) == pytest.approx(1.4792, abs=5e-5) and step.index(max(step)) == 6
+    preset = ev.Scenario(kind="osc", a1=C.PRESETS[C.OSC]["a1"], theta=C.PRESETS[C.OSC]["theta"]).plant()
+    assert max(preset.step_response(400, 1)) == pytest.approx(1.5296, abs=5e-5)
+    for cid in ("a1", "b1", "c1"):
+        plant, _kp, _ki = C.case_plant(cid)
+        assert max(plant.step_response(2000, 1)) <= 1.0 + 1e-12                    # monoton unter G
+    _readme_has("die schwach gedämpfte Strecke schwingt dabei zwischendurch über G hinaus: bis 1,48 in den Fällen b5 und b6, bis 1,53 im Preset „Schwingende Strecke“")
+
+
+def test_b9_integrator_limit_differs_without_saturation_as_soon_as_i_exceeds_one():
+    """Voraussetzung der Gleichheit (README B9): Rückrechnung und bedingte Integration folgen „Keine“, solange |v| ≤ 1; die Integratorgrenze nur, solange auch |I| ≤ 1 bleibt."""
+    plant = Plant("lag2", (0.3911, 0.4139), 1.0)
+    runs = {name: simulate(plant, 0.2319, 0.3512, var, kaw, 0, 0.663, 0.663, horizon=400, still=None, record=True)[1]
+            for name, var, kaw in (("keine", "keine", 0.0), ("bc", "bc", 0.5), ("bed", "bed", 0.0), ("ilim", "ilim", 0.0))}
+    keine = runs["keine"]
+    assert max(abs(v) for v in keine.v) == pytest.approx(0.991, abs=5e-4) and max(keine.I) == pytest.approx(1.0005, abs=5e-5)
+    assert runs["bc"].y == keine.y and runs["bed"].y == keine.y                      # Sättigung nie erreicht: Rückrechnung und bedingte Integration gleich „Keine“
+    assert max(abs(v) for v in runs["ilim"].v) < 1
+    assert 3e-4 < max(abs(a - b) for a, b in zip(runs["ilim"].y, keine.y)) < 5e-4    # die Integratorgrenze weicht ab, obwohl v nie sättigt
+    _readme_has("Voraussetzung der Gleichheit:** Für Rückrechnung und bedingte Integration gilt sie, solange |v| ≤ 1 bleibt", "größtes |v| = 0,991, größtes I = 1,0005, Abweichung von „Keine“ bis 4·10⁻⁴")
+
+
+def test_lower_limit_mirrors_the_upper_limit_for_every_variant():
+    """App-Expander und README: Die Rückrechnung an der unteren Grenze ist das Spiegelbild der oberen (Vorzeichen von r, y, v, u, I, e umgekehrt), ebenso die anderen Varianten."""
+    plant, kp, ki = C.case_plant("a1")
+    for variant, kaw in (("keine", 0.0), ("bc", 0.5), ("bc", ki / kp), ("bed", 0.0), ("ilim", 0.0)):
+        up = simulate(plant, kp, ki, variant, kaw, 57, 4.7, 0.77, horizon=300, still=None, record=True)[1]
+        down = simulate(plant, kp, ki, variant, kaw, 57, -4.7, -0.77, horizon=300, still=None, record=True)[1]
+        for name in ("y", "e", "v", "u", "I"):
+            assert getattr(down, name) == [-x for x in getattr(up, name)], (variant, kaw, name)
+
+
+def test_readme_case_table_lists_all_24_cases_exactly_as_the_app_has_them():
+    def g(x):
+        return f"{x:g}".replace(".", ",")
+
+    for cid, label, _kind, _par, gain, kp, ki in C.FAELLE:
+        assert f"| {cid} | {label} | {g(gain)} | {g(kp)} | {g(ki)} |" in README, cid
+    assert sum(1 for line in README.splitlines() if re.match(r"\| [abc][1-8] \| ", line)) == 24
+    _readme_has("drei Gruppen zu je acht Sätzen", "4 × 8 wären 32 Fälle")
+
+
+def test_readme_random_distributions_match_the_code():
+    """B3/B8 (`ev.random_cases`) und B4/B9 (`tests/helpers.random_plant`): die Spannen der README stehen im Quelltext."""
+    import inspect
+
+    import helpers
+
+    src = inspect.getsource(ev.random_cases)
+    for literal in ("logunif(0.5, 3.0)", "unif(0.3, 0.97)", "unif(0.3, 0.95)", "1 + int(rng.random() * 8)", "unif(0.6, 0.93)", "unif(0.15, 1.0)", "logunif(0.3, 4.0)", "logunif(0.03, 0.4)",
+                    "unif(1.5, 6.0)", "unif(0.2, 0.9)", "unif(5, 150)"):
+        assert literal in src, literal
+    src2 = inspect.getsource(helpers.random_plant)
+    for literal in ("0.5 + 2.5 * rng.random()", "0.3 + 0.67 * rng.random()", "0.3 + 0.65 * rng.random()", "1 + rng.below(8)", "0.6 + 0.33 * rng.random()", "0.15 + 0.85 * rng.random()",
+                    "0.3 + 3.7 * rng.random()", "0.03 + 0.37 * rng.random()", "< 0.95"):
+        assert literal in src2, literal
+    _readme_has("G logarithmisch gleichverteilt in [0,5; 3]", "kp logarithmisch gleichverteilt in [0,3; 4], ki in [0,03; 0,4]", "ein Versuch mit ρ ≥ 0,97 wird verworfen (5 347 Versuche für 3 000 Fälle)",
+                "G gleichverteilt in [0,5; 3]", "ein Versuch mit ρ ≥ 0,95 wird verworfen", "T₁ = 60, 120, 240 (Zufalls-Seed 99, 200 Fälle)",
+                "Sollwerte r₁ und r₂ je 0 bis 0,1·G, T₁ = 60 (Zufalls-Seed 4242, 3 000 Fälle)")

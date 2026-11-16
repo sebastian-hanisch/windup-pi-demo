@@ -37,7 +37,7 @@ def test_app_loads_without_exception():
 def test_app_shows_the_six_sections_and_the_math_expander():
     at = _fresh_app()
     headings = " ".join(m.value for m in at.markdown) + " " + " ".join(s.value for s in at.subheader)
-    for part in ("🎯 Experiment 1: Windup von Hand", "❓ Kernfragen", "Experiment 2: Wie lange dauert es?", "Drei Streckenarten, 24 Parametersätze", "kaw wählen", "Messrauschen nahe der Grenze",
+    for part in ("🎯 Experiment 1: Windup von Hand", "❓ Kernfragen", "Experiment 2: Wie lange dauert es?", "Vier Streckenarten, 24 Parametersätze", "kaw wählen", "Messrauschen nahe der Grenze",
                  "Wann hilft es nicht?", "Wo die Annahmen enden"):
         assert part in headings, part
     assert any(e.label == "📐 Mathematische Formulierung" for e in at.expander)          # per Titel, nicht per Index (DEMO-PLAYBOOK §2)

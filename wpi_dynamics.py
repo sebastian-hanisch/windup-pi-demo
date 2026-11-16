@@ -3,7 +3,7 @@
 Eigene Umsetzung in diesem Modell (Namen der Verfahren wie in der Literatur, Regeln hier festgelegt; keine Neuheitsaussage).
 
 Zeitlage: Abtastzeit 1, y_k ist, was der Regler in Periode k sieht. Regler: e = r − y, v = kp·e + I, u = sat(v) mit |u| ≤ UMAX,
-I⁺ = I + ki·e + (Anti-Windup-Term). Die Strecke bekommt u_k und liefert y_(k+1).
+I⁺ = I + ki·e + (Anti-Windup-Term). Die Strecke bekommt u_k und liefert y_(k+1) (zwei Verzögerungen in Reihe erst y_(k+2), Totzeit d erst y_(k+1+d)).
 
 Der Kern rechnet mit Python-Zahlen ohne Bibliotheksfunktionen (+, −, ×, ÷, Vergleiche): dieselben Funktionen laufen mit `float` und mit `fractions.Fraction`
 (Handbeispiel in Brüchen, tests/). Damit sind die Bahnen auf jeder Plattform dieselben Bits; nur `rho_pi` (Eigenwerte, numpy) hängt an der Linearen Algebra
@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import numpy as np
 
 UMAX = 1                 # Stellgrenze |u| <= 1
-TOL_REL = 0.025          # Einschwingband: |y − r2| <= 2,5 % von r2 (bei r2 = 0,8 genau 0,02 wie in der Vormessung V6)
+TOL_REL = 0.025          # Einschwingband: |y − r2| <= 2,5 % von r2 (bei r2 = 0,8 genau 0,02, dem Band des Nachbaus B1)
 HORIZON = 6000           # Perioden nach dem Sprung, höchstens
 STILL = 500              # so viele Perioden im Band (und |v| <= UMAX) hintereinander gelten als eingeschwungen: Abbruch des Laufs
 DIVERGENZ = 1e12         # |I| darüber: der Lauf gilt als divergiert
@@ -39,7 +39,8 @@ VARIANTEN_NAME = {
 @dataclass(frozen=True)
 class Plant:
     """kind 'lag1' (a, d): x⁺ = a·x + G(1 − a)·u_(k−d), mit Totzeit d Perioden;
-    'lag2' (a1, a2): zwei Verzögerungen in Reihe, je mit Verstärkung 1, insgesamt G;
+    'lag2' (a1, a2): zwei Verzögerungen in Reihe: x1⁺ = a1·x1 + G(1 − a1)·u, x2⁺ = a2·x2 + (1 − a2)·x1, y = x2; das erste Glied hat die Verstärkung G, das zweite 1,
+    insgesamt G; u_k wirkt erst in y_(k+2), eine Periode später als bei den anderen Arten;
     'osc' (c1, c0): y⁺ = c1·y − c0·y₋ + G(1 − c1 + c0)·u (schwach gedämpft, wenn die Pole nahe am Einheitskreis liegen). Jede Strecke hat die Gleichstromverstärkung G."""
 
     kind: str
