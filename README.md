@@ -1,7 +1,6 @@
 # Windup – wenn die Stellgrenze den Integrator überlistet – Streamlit-Demo
 
-<!-- TODO nach dem Deploy: direkt hierher den Live-Link setzen (Leerzeile davor und danach):
-**[→ Demo live ausprobieren](https://sebastianhanisch-windup-pi-demo.streamlit.app/)** -->
+**[→ Demo live ausprobieren](https://sebastianhanisch-windup-pi-demo.streamlit.app/)**
 
 Diese Demo gehört zur Themengruppe **Regelung (von LQR bis MPC)** auf der Website „Sebastian Hanisch – Operations Research und Machine Learning“. Der Bezug zu [`mpc-stellgrenzen-demo`](https://github.com/sebastian-hanisch/mpc-stellgrenzen-demo)
 ist ein **Kontrast**: Dort steht die Stellgrenze im Entwurf des Reglers (MPC als quadratisches Programm); hier steht sie **nicht** darin. Ein PI-Regler rechnet linear, die Grenze schneidet nur hinter dem Regler ab, und der Integrator weiß davon nichts.
